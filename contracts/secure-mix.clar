@@ -45,8 +45,46 @@
 (define-constant MIN-POOL-AMOUNT u100000)             ;; 0.001 BTC in sats
 (define-constant MIXING-FEE-PERCENTAGE u2)            ;; 2% protocol fee
 
-;; State Variables=====
+;; State Variables
 
 (define-data-var is-contract-initialized bool false)
 (define-data-var is-contract-paused bool false)
 (define-data-var total-protocol-fees uint u0)
+
+;; Data Maps
+
+;; User balance tracking
+(define-map user-balances 
+    principal 
+    uint)
+
+;; Daily transaction tracking for rate limiting
+(define-map daily-tx-totals 
+    {user: principal, day: uint}
+    uint)
+
+;; Mixer pool management
+(define-map mixer-pools 
+    uint 
+    {
+        total-amount: uint,
+        participant-count: uint,
+        is-active: bool,
+        participants: (list 10 principal),
+        pool-creator: principal
+    })
+
+;; Pool participation tracking
+(define-map pool-participant-status 
+    {pool-id: uint, user: principal}
+    bool)
+
+;; Public Functions
+
+;; Initialize contract with safety checks
+(define-public (initialize)
+    (begin
+        (asserts! (not (var-get is-contract-initialized)) ERR-ALREADY-INITIALIZED)
+        (asserts! (is-eq tx-sender CONTRACT-OWNER) ERR-NOT-AUTHORIZED)
+        (var-set is-contract-initialized true)
+        (ok true)))
