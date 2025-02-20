@@ -250,3 +250,40 @@
 ;; Get user balance
 (define-read-only (get-user-balance (user principal))
     (default-to u0 (map-get? user-balances user)))
+
+;; Get remaining daily limit
+(define-read-only (get-daily-limit-remaining (user principal))
+    (let ((current-day (/ block-height u144))
+          (current-total (default-to u0 
+            (map-get? daily-tx-totals {user: user, day: current-day}))))
+        (- MAX-DAILY-LIMIT current-total)))
+
+;; Get contract status
+(define-read-only (get-contract-status)
+    {
+        is-paused: (var-get is-contract-paused),
+        is-initialized: (var-get is-contract-initialized),
+        total-protocol-fees: (var-get total-protocol-fees)
+    })
+
+;; Get pool details
+(define-read-only (get-pool-details (pool-id uint))
+    (map-get? mixer-pools pool-id))
+
+;; Private Functions
+
+;; Helper for pool fund distribution
+(define-private (distribute-to-participant 
+                 (participant principal) 
+                 (previous-result (response uint uint)))
+    (match previous-result 
+        prev-value 
+        (let ((per-participant (/ (- (get total-amount (unwrap-panic (map-get? mixer-pools u0))) 
+                                     (/ (* (get total-amount (unwrap-panic (map-get? mixer-pools u0))) 
+                                           MIXING-FEE-PERCENTAGE) 
+                                        u100)) 
+                                  (get participant-count (unwrap-panic (map-get? mixer-pools u0))))))
+            (try! (as-contract (stx-transfer? per-participant (as-contract tx-sender) participant)))
+            (ok (+ prev-value per-participant)))
+        err-value 
+        (err err-value)))
