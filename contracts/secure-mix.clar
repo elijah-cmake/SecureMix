@@ -96,7 +96,7 @@
         (asserts! (not (var-get is-contract-paused)) ERR-NOT-AUTHORIZED)
         (asserts! (and (> amount u0) (<= amount MAX-TRANSACTION-AMOUNT)) ERR-INVALID-AMOUNT)
         
-        (let ((current-day (/ block-height u144))
+        (let ((current-day (/ stacks-block-height u144))
               (current-total (default-to u0 
                 (map-get? daily-tx-totals {user: tx-sender, day: current-day}))))
             (asserts! (<= (+ current-total amount) MAX-DAILY-LIMIT) ERR-DAILY-LIMIT-EXCEEDED)
@@ -121,7 +121,7 @@
         (asserts! (and (> amount u0) (<= amount MAX-TRANSACTION-AMOUNT)) ERR-INVALID-AMOUNT)
         
         (let ((current-balance (default-to u0 (map-get? user-balances tx-sender)))
-              (current-day (/ block-height u144))
+              (current-day (/ stacks-block-height u144))
               (current-total (default-to u0 
                 (map-get? daily-tx-totals {user: tx-sender, day: current-day}))))
             
@@ -253,7 +253,7 @@
 
 ;; Get remaining daily limit
 (define-read-only (get-daily-limit-remaining (user principal))
-    (let ((current-day (/ block-height u144))
+    (let ((current-day (/ stacks-block-height u144))
           (current-total (default-to u0 
             (map-get? daily-tx-totals {user: user, day: current-day}))))
         (- MAX-DAILY-LIMIT current-total)))
